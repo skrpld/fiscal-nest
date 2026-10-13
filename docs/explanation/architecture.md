@@ -1,6 +1,6 @@
 # Architecture
 
-> Entities, algorithms, business rules, and runtime characteristics. Aligned with `FISCAL_NEST_CORE_LOCKED.md` v1.2, which prevails on any conflict.
+> Entities, algorithms, business rules, and runtime characteristics. Aligned with the [locked specification](../reference/specification.md) v1.2, which prevails on any conflict.
 
 ---
 
@@ -245,6 +245,12 @@ The engine uses **fail-fast** validation. All public entry points validate input
 - `IllegalArgumentException` is thrown for every validation failure.
 - No checked exceptions are used.
 - The engine does not catch runtime exceptions from `BigDecimal` or the JDK; it lets them propagate (they indicate programmer error or JVM failure, not business-rule violation).
+
+### 7.3 Untrusted Input
+- Constructors validate, and `BudgetCalculator` validates again, so instances created by reflection-based deserializers (Gson, Jackson) are checked too.
+- The 1000-digit limit rejects values such as `1E+999999999`, whose quantization would exhaust memory.
+- Recurrences are counted arithmetically (§6.2), so an event anchored far in the past does not slow the engine down.
+- The cost and size of a forecast grow linearly with `forecastPeriods` and the number of events. A server that passes user input through should bound those two values.
 
 ---
 
