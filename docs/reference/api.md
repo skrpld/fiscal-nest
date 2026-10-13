@@ -1,6 +1,6 @@
 # API Contract
 
-> Public API, configuration, and output data structures. Aligned with `FISCAL_NEST_CORE_LOCKED.md` v1.2, which prevails on any conflict.
+> Public API, configuration, and output data structures. Aligned with the [locked specification](specification.md) v1.2, which prevails on any conflict.
 
 ---
 
@@ -216,7 +216,7 @@ Wraps two independent views of the period: the **plan** (`distribution`, whole-p
 
 ## 6. Exception Reference
 
-All failures throw `IllegalArgumentException`. Exact messages are listed in `FISCAL_NEST_CORE_LOCKED.md` §9.
+All failures throw `IllegalArgumentException`. Exact messages are listed in the [specification](specification.md) §9.
 
 | Condition | Message prefix |
 |-----------|----------------|

@@ -1,6 +1,8 @@
 # Development Plan
 
 > Step-by-step implementation guide. Each step is a self-contained chat session.
+>
+> The spec files named below have moved to `docs/`: `FISCAL_NEST_CORE_LOCKED.md` → [docs/reference/specification.md](docs/reference/specification.md), `API.md` → [docs/reference/api.md](docs/reference/api.md), `GLOSSARY.md` → [docs/reference/glossary.md](docs/reference/glossary.md), `ARCHITECTURE.md` → [docs/explanation/architecture.md](docs/explanation/architecture.md). The step prompts keep the original names for history.
 
 ---
 
