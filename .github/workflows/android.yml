@@ -1,0 +1,212 @@
+name: Android
+
+on:
+  push:
+    # Listing tags without branches would turn off branch builds.
+    branches:
+      - "**"
+    # android-v0.3.0 -> GitHub release "Android 0.3.0" with the APK,
+    # versionName 0.3.0. Path filters are not applied to tag pushes.
+    tags:
+      - "android-v*"
+    # The app builds the engine from core/.
+    paths:
+      - "android/**"
+      - "core/src/main/**"
+      - "core/build.gradle.kts"
+      - ".github/workflows/android.yml"
+  pull_request:
+    paths:
+      - "android/**"
+      - "core/src/main/**"
+      - "core/build.gradle.kts"
+      - ".github/workflows/android.yml"
+  # Actions -> Android -> Run workflow. With "release" on main the run builds
+  # versionName <version>, tags android-v<version> on the built commit and
+  # publishes the release, exactly like a tag push.
+  workflow_dispatch:
+    inputs:
+      release:
+        description: Publish a release (main only)
+        type: boolean
+        default: false
+      version:
+        description: Release version, e.g. 0.3.0 (required with release)
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+# A release run has its own group, so a push to main does not cancel it.
+concurrency:
+  group: android-${{ github.ref }}${{ inputs.release && '-release' || '' }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') && !inputs.release }}
+
+defaults:
+  run:
+    working-directory: android
+
+env:
+  # versionCode = run number + offset. The app was released from the former
+  # fiscal-nest-android repository with versionCode up to 5 (CI builds up to
+  # 41); the offset keeps every build from this workflow newer than those.
+  VERSION_CODE_OFFSET: 100
+
+jobs:
+  test:
+    name: Tests and lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # Caches Gradle and validates the wrapper jar.
+      - uses: gradle/actions/setup-gradle@v6
+
+      # The engine's own tests run in core.yml.
+      - name: Domain tests
+        run: ./gradlew :domain:test
+
+      - name: App unit tests (JVM and Robolectric)
+        run: ./gradlew :app:testDebugUnitTest
+
+      - name: Android lint
+        run: ./gradlew :app:lintDebug
+
+      - name: Upload test and lint reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-reports
+          path: |
+            android/domain/build/reports/
+            android/app/build/reports/
+          retention-days: 14
+
+  build:
+    name: Build APK
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # A tag android-v0.3.0 (or android-v0.3.0-rc.1) or the "version" input of
+      # a release run becomes versionName 0.3.0; otherwise fiscalnest.versionName
+      # from gradle.properties is used.
+      - name: Version
+        id: version
+        env:
+          RELEASE: ${{ inputs.release }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$RELEASE" = true ]; then
+            version="$INPUT_VERSION"
+            bash ../.github/scripts/check-release.sh android-v "$version"
+          elif [[ "$GITHUB_REF" == refs/tags/android-v* ]]; then
+            version="${GITHUB_REF_NAME#android-v}"
+            if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+              echo "::error::Tag $GITHUB_REF_NAME is not android-vMAJOR.MINOR.PATCH[-suffix]."
+              exit 1
+            fi
+          else
+            version=$(sed -n 's/^fiscalnest.versionName=//p' gradle.properties)
+          fi
+          echo "VERSION_NAME=$version" >> "$GITHUB_ENV"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # Release signing needs four repository secrets (see android/README.md);
+      # without them the release APK is signed with the runner's temporary debug
+      # key, so it installs but cannot update another build.
+      - name: Prepare signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.FISCAL_NEST_KEYSTORE_BASE64 }}
+          RELEASE: ${{ startsWith(github.ref, 'refs/tags/') || inputs.release }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+            echo "FISCAL_NEST_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+          elif [ "$RELEASE" = true ]; then
+            echo "::warning::No signing secrets: the release APK is signed with a temporary debug key and cannot be installed over another build."
+          fi
+
+      # A release run builds only the release APK; other runs also build the
+      # debug APK, which installs next to a release build.
+      - name: Build
+        env:
+          RELEASE: ${{ startsWith(github.ref, 'refs/tags/') || inputs.release }}
+          FISCAL_NEST_KEYSTORE_PASSWORD: ${{ secrets.FISCAL_NEST_KEYSTORE_PASSWORD }}
+          FISCAL_NEST_KEY_ALIAS: ${{ secrets.FISCAL_NEST_KEY_ALIAS }}
+          FISCAL_NEST_KEY_PASSWORD: ${{ secrets.FISCAL_NEST_KEY_PASSWORD }}
+        run: |
+          tasks=(:app:assembleRelease)
+          [ "$RELEASE" = true ] || tasks+=(:app:assembleDebug)
+          ./gradlew "${tasks[@]}" \
+            -Pfiscalnest.versionName="$VERSION_NAME" \
+            -Pfiscalnest.versionCode=$((GITHUB_RUN_NUMBER + VERSION_CODE_OFFSET))
+
+      - name: Collect APKs
+        env:
+          RELEASE: ${{ startsWith(github.ref, 'refs/tags/') || inputs.release }}
+        run: |
+          mkdir -p dist
+          if [ "$RELEASE" = true ]; then
+            name="fiscal-nest-${VERSION_NAME}"
+          else
+            name="fiscal-nest-${VERSION_NAME}-${GITHUB_RUN_NUMBER}"
+            cp app/build/outputs/apk/debug/app-debug.apk "dist/${name}-debug.apk"
+          fi
+          cp app/build/outputs/apk/release/app-release.apk "dist/${name}.apk"
+          (cd dist && sha256sum -- *.apk > SHA256SUMS)
+          rm -f "$RUNNER_TEMP/release.jks"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: fiscal-nest-android-${{ steps.version.outputs.version }}
+          path: android/dist/*
+          if-no-files-found: error
+
+  release:
+    name: GitHub release
+    if: startsWith(github.ref, 'refs/tags/android-v') || inputs.release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      # Full history: release notes start at the previous android-v* tag.
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: fiscal-nest-android-${{ needs.build.outputs.version }}
+          path: dist
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # A manual run creates the tag; a tag push brings its own.
+          TAG: ${{ inputs.release && format('android-v{0}', inputs.version) || github.ref_name }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: bash .github/scripts/publish-release.sh "$TAG" "Android $VERSION" "android-v*" dist/*

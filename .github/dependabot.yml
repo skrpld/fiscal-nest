@@ -1,0 +1,22 @@
+version: 2
+updates:
+  # Gradle dependencies, plugins and wrappers of both builds: one grouped pull
+  # request a month, so core/ and android/ stay on the same Kotlin and Gradle.
+  - package-ecosystem: gradle
+    directories:
+      - /core
+      - /android
+    schedule:
+      interval: monthly
+    groups:
+      gradle:
+        patterns: ['*']
+
+  # GitHub Actions used by the workflows: one grouped pull request a month.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ['*']
