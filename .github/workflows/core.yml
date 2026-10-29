@@ -1,0 +1,71 @@
+name: Core
+
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "core/**"
+      - "LICENSE"
+      - "NOTICE"
+      - ".github/workflows/core.yml"
+  pull_request:
+    paths:
+      - "core/**"
+      - "LICENSE"
+      - "NOTICE"
+      - ".github/workflows/core.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: core
+
+jobs:
+  build:
+    name: Build and test (JDK ${{ matrix.java }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # Oldest supported and the JDK used by the Android build.
+        java: ["17", "21"]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      # Caches Gradle and validates the wrapper jar.
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Build and test
+        run: ./gradlew build
+
+      # The jar must carry the root LICENSE and NOTICE.
+      - name: Check jar
+        run: |
+          for jar in build/libs/*.jar; do
+            files=$(unzip -Z1 "$jar")
+            for f in META-INF/LICENSE META-INF/NOTICE; do
+              grep -qx "$f" <<< "$files" || { echo "::error::$jar has no $f"; exit 1; }
+            done
+          done
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: core-test-reports-jdk${{ matrix.java }}
+          path: core/build/reports/tests/
+          retention-days: 7
