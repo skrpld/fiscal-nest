@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Gradle dependencies, plugins and the wrapper: one grouped pull request a month.
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      gradle:
+        patterns: ['*']
+
+  # GitHub Actions used by the workflows: one grouped pull request a month.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ['*']
