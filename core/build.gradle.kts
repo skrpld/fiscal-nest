@@ -36,8 +36,9 @@ tasks.test {
     useJUnitPlatform()
 }
 
+// LICENSE and NOTICE live at the repository root, shared with the Android app.
 tasks.withType<Jar>().configureEach {
-    from(rootDir) {
+    from(rootDir.parentFile) {
         include("LICENSE", "NOTICE")
         into("META-INF")
     }
@@ -52,7 +53,7 @@ publishing {
                 description.set(
                     "Stateless Kotlin engine that distributes income across expenses, a safety cushion and savings."
                 )
-                url.set("https://github.com/skrpld/fiscal-nest-core")
+                url.set("https://github.com/skrpld/fiscal-nest")
                 licenses {
                     license {
                         name.set("Apache-2.0")
@@ -67,8 +68,8 @@ publishing {
                     }
                 }
                 scm {
-                    url.set("https://github.com/skrpld/fiscal-nest-core")
-                    connection.set("scm:git:https://github.com/skrpld/fiscal-nest-core.git")
+                    url.set("https://github.com/skrpld/fiscal-nest")
+                    connection.set("scm:git:https://github.com/skrpld/fiscal-nest.git")
                 }
             }
         }

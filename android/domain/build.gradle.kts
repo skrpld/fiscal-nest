@@ -21,7 +21,7 @@ kotlin {
 }
 
 dependencies {
-    api(project(":core"))
+    api(libs.fiscalnest.core)
     api(libs.kotlinx.coroutines.core)
     api(libs.kotlinx.serialization.json)
 
