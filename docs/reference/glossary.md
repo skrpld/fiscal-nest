@@ -37,7 +37,7 @@
 | **Carry-Forward** | Propagation of `closingBalance` and `cushionState` from one forecast period to the next. |
 | **WHAT_IF Mode** | Light, time-agnostic snapshot calculation from aggregate amounts. |
 | **FORECAST Mode** | Heavy, calendar-aware multi-period projection with a plan, a cash view and daily metrics per period. |
-| **Engine** | The `fiscal-nest-core` module — pure business logic, stateless. |
+| **Engine** | The `fiscal-nest-core` library (`core/`) — pure business logic, stateless. |
 | **Client** | The consuming application (mobile, server, CLI) — handles UI, DB, formatting, messaging, and display data such as event names and categories. |
 | **Fail-Fast Validation** | Rejecting invalid inputs immediately with `IllegalArgumentException` before any calculation. |
 | **Engine Facade** | `BudgetCalculator` — the single public entry point for all calculations. |

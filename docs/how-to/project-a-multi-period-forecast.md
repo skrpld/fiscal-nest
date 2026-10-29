@@ -3,8 +3,8 @@
 Use `FORECAST` mode to turn dated, recurring income and expenses into a plan, a cash view and
 daily budget figures for several periods ahead.
 
-Prerequisites: the engine is on the classpath (see [Install](../../README.md#install)) and you have an
-`EngineConfig` (the one from [Usage](../../README.md#usage) is used below).
+Prerequisites: the engine is on the classpath (see [Install](../../core/README.md#install)) and you have an
+`EngineConfig` (the one from [Usage](../../core/README.md#usage) is used below).
 
 1. Describe income and expenses as events. Each event has an `id` for client-side correlation, an
    amount per occurrence, a recurrence and a date range (`endDate = null` means unbounded):

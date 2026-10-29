@@ -1,8 +1,12 @@
 # Documentation
 
+The engine ([`core/`](../core)) and the Android app ([`android/`](../android)) are described in their
+READMEs; the documents below cover the engine in depth and the release process.
+
 ## How-to guides
 
 - [Project a multi-period forecast](how-to/project-a-multi-period-forecast.md) — dated events in, plan, cash view and daily budget per period out
+- [Publish a release](how-to/publish-a-release.md) — Android tags, versions, CI workflows, signing secrets
 
 ## Reference
 

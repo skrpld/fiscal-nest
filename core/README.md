@@ -1,12 +1,12 @@
 # Fiscal Nest Core
 
-[![CI](https://github.com/skrpld/fiscal-nest-core/actions/workflows/ci.yml/badge.svg)](https://github.com/skrpld/fiscal-nest-core/actions/workflows/ci.yml)
+[![Core](https://github.com/skrpld/fiscal-nest/actions/workflows/core.yml/badge.svg)](https://github.com/skrpld/fiscal-nest/actions/workflows/core.yml)
 
 Stateless Kotlin engine that distributes income across expenses, a safety cushion and savings.
 
 Fiscal Nest Core calculates how income should be distributed across mandatory expenses, optional
 expenses, a safety cushion and a piggy bank. It runs on any JVM 17+ runtime and can be embedded in
-Android apps (for example [fiscal-nest-android](https://github.com/skrpld/fiscal-nest-android)),
+Android apps (for example the [Fiscal Nest app](../android) in this repository),
 server-side services and CLI tools.
 
 The engine is pure business logic: no UI, no database, no I/O, no formatting, no Android SDK.
@@ -32,8 +32,8 @@ Requires JDK 17+. The library is not published to Maven Central; install it into
 repository (`~/.m2`):
 
 ```sh
-git clone https://github.com/skrpld/fiscal-nest-core
-cd fiscal-nest-core
+git clone https://github.com/skrpld/fiscal-nest
+cd fiscal-nest/core
 ./gradlew publishToMavenLocal
 ```
 
@@ -105,12 +105,12 @@ result.freeRemainder       // 11000.00
 Invalid input throws `IllegalArgumentException` before any calculation. The engine is stateless
 and thread-safe: share one `EngineConfig` and call `BudgetCalculator` from any number of threads.
 
-Multi-period projection from dated events: [Project a multi-period forecast](docs/how-to/project-a-multi-period-forecast.md).
+Multi-period projection from dated events: [Project a multi-period forecast](../docs/how-to/project-a-multi-period-forecast.md).
 
 ## Development
 
-The project is a Gradle Kotlin/JVM module (Kotlin 2.4.20, JVM 17 bytecode, JUnit Jupiter;
-warnings are errors).
+`core/` is a standalone Gradle Kotlin/JVM build (Kotlin 2.4.20, JVM 17 bytecode, JUnit Jupiter;
+warnings are errors). Run the commands below from `core/`.
 
 | Task | Command |
 |---|---|
@@ -118,15 +118,16 @@ warnings are errors).
 | Tests only | `./gradlew test` |
 | Install into `~/.m2` | `./gradlew publishToMavenLocal` |
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs `./gradlew build` on JDK 17 and 21
-for every push to `main` and every pull request.
+CI ([`.github/workflows/core.yml`](../.github/workflows/core.yml)) runs `./gradlew build` on JDK 17
+and 21 for every push and pull request that touches `core/`. The Android app builds the engine from
+these sources, so a change here also ships in the app (and triggers its workflow).
 
 Sources are in `src/main/kotlin/fiscalnest/core/`: `BudgetCalculator.kt` is the public facade;
 `DistributionEngine`, `CalendarEngine`, `DecimalUtils` and `InputValidator` are internal.
 
 ## Documentation
 
-See [docs/](docs/README.md). The [locked specification](docs/reference/specification.md) (v1.2) is
+See [docs/](../docs/README.md). The [locked specification](../docs/reference/specification.md) (v1.2) is
 the single source of truth and prevails over every other document.
 
 ## API
@@ -140,14 +141,14 @@ object BudgetCalculator {
 }
 ```
 
-All public types, fields and exception messages: [docs/reference/api.md](docs/reference/api.md).
+All public types, fields and exception messages: [docs/reference/api.md](../docs/reference/api.md).
 
 ## Contributing
 
-Questions and bug reports: [issues](https://github.com/skrpld/fiscal-nest-core/issues). Pull requests
+Questions and bug reports: [issues](https://github.com/skrpld/fiscal-nest/issues). Pull requests
 are welcome. Requirements:
 
-- Code complies with the [locked specification](docs/reference/specification.md); a deviation is a
+- Code complies with the [locked specification](../docs/reference/specification.md); a deviation is a
   bug. Changing the specification needs an amendment with a documented reason in its §0.
 - Every `.kt` file starts with the license header `Copyright 2026 skrpld` +
   `SPDX-License-Identifier: Apache-2.0`; every public declaration has KDoc.
@@ -155,4 +156,4 @@ are welcome. Requirements:
 
 ## License
 
-[Apache-2.0](LICENSE) © skrpld. Redistributions must keep the [NOTICE](NOTICE) file.
+[Apache-2.0](../LICENSE) © skrpld. Redistributions must keep the [NOTICE](../NOTICE) file.
